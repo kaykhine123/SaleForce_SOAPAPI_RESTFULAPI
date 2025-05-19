@@ -11,12 +11,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,13 +24,8 @@ import org.xml.sax.SAXException;
 import com.SaleForceApi.Account.domain.entity.AccountRegistrationRequest;
 import com.SaleForceApi.common.SaleForceCallUtil;
 import com.SaleForceApi.common.SoapBodyBuilder;
-import com.SaleForceApi.constants.SaleForceURLs;
 import com.SaleForceApi.domain.entity.SaleForceSession;
 import com.SaleForceApi.exceptions.BusinessLogicException;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 @Service
 public class AccountService {
@@ -48,64 +38,6 @@ public class AccountService {
 	public AccountService(SaleForceSession session) {
 		this.session = session;
 	}
-
-	public List<String> getAllObjectNamesByRestFul() throws Exception {
-
-		String instanceUrl = session.getServerUrl().split("/services")[0]; // ✅ Trim it down for REST usage
-		String restUrl = instanceUrl + SaleForceURLs.SALEFORCE_OBJECTS_NAME_URL;
-
-		HttpGet get = new HttpGet(restUrl);
-		get.setHeader("Authorization", "Bearer " + session.getSessionId());
-		get.setHeader("Accept", "application/json");
-
-		try (CloseableHttpClient client = HttpClients.createDefault();
-				ClassicHttpResponse response = client.execute(get)) {
-
-			String json = EntityUtils.toString(response.getEntity());
-
-			if (response.getCode() != 200) {
-				throw new RuntimeException("Failed to get sobjects: " + json);
-			}
-
-			JsonObject root = JsonParser.parseString(json).getAsJsonObject();
-			JsonArray sobjects = root.getAsJsonArray("sobjects");
-
-			List<String> objectNames = new ArrayList<>();
-			for (JsonElement el : sobjects) {
-				JsonObject obj = el.getAsJsonObject();
-				objectNames.add(obj.get("name").getAsString());
-			}
-			return objectNames;
-		}
-	}
-
-	public List<String> getAllObjectNamesWithRetry() throws Exception {
-		return saleForceCallUtil.callWithRetry(sessionId -> {
-			try {
-				String instanceUrl = session.getServerUrl().split("/services")[0]; // ✅ Trim it down for REST usage
-				String restUrl = instanceUrl + SaleForceURLs.SALEFORCE_OBJECTS_NAME_URL;
-				List<String> objectNames = new ArrayList<>();
-
-				HttpGet get = new HttpGet(restUrl);
-				get.setHeader("Authorization", "Bearer " + session.getSessionId());
-				get.setHeader("Accept", "application/json");
-
-				String json = saleForceCallUtil.executeWithRetry(get);
-
-				JsonObject root = JsonParser.parseString(json).getAsJsonObject();
-				JsonArray sobjects = root.getAsJsonArray("sobjects");
-				for (JsonElement el : sobjects) {
-					JsonObject obj = el.getAsJsonObject();
-					objectNames.add(obj.get("name").getAsString());
-				}
-				return objectNames;
-			} catch (Exception e) {
-				throw new BusinessLogicException("Getting Objects are failed" + e.getMessage());
-			}
-		});
-	}
-
-//	=============================== Using SOAP API  =================================================
 
 	public List<String> getAllObjectNamesBySOAP() throws Exception {
 

@@ -41,7 +41,7 @@ public class SaleForceCallUtil {
 
 	public String executeWithRetry(HttpUriRequestBase request) throws Exception {
 		int attempts = 0;
-		while (attempts < 3) {
+		while (attempts < AppConstants.MAX_RETRY_COUNT) {
 			try (CloseableHttpClient client = HttpClients.createDefault();
 					ClassicHttpResponse response = client.execute(request)) {
 
